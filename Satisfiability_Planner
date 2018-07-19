@@ -1,0 +1,77 @@
+;*********INITIAL STATE: ACTIONS, STATE, NEXT STATE**************
+;Initialize the actions
+(declare-const a-1 Bool)
+(declare-const a-2 Bool)
+
+;Inital state of the drone
+(define-fun d1_active_0 () Bool true)
+(define-fun d2_active_0 () Bool true)
+(define-fun d1_velocity_0 () Real 10.6)
+(define-fun d2_velocity_0 () Real 16.7)
+(define-fun d1_position_0 () Real 46.5)
+(define-fun d2_position_0 () Real 30.1)
+
+;Inital next state of drone
+(declare-const d1_position_1 Real)
+(declare-const d2_position_1 Real)
+(define-fun d1_active_1 () Bool
+  (< d1_position_1 50)
+)
+(define-fun d2_active_1 () Bool
+  (< d2_position_1 50)
+)
+(declare-const d1_velocity_1 Real)
+(declare-const d2_velocity_1 Real)
+
+;Initalize Bandwidth and delta_t
+(declare-const action_one_count Int)
+(declare-const action_two_count Int)
+(declare-const action_count Int)
+(define-fun network_Bandwidth () Int 1)
+(define-fun delta_t () Int 1)
+
+;*********GOAL STATE: Minimize Error/Maximize Covereage*********
+;Cover the most ground without going over the Range Limit
+(maximize d1_position_1)
+(maximize d2_position_1)
+
+;*********OPERATOR ENCODING: 2 different actions**************
+;Action One: Correct Velocity Drone One
+(assert (=> a-1 (and d1_active_0                                                    ;precondition: Active
+                     (= d1_velocity_1  15.0)                                        ;effect: Correct Velocity
+                     (= d1_position_1 (+ d1_position_0 (* d1_velocity_1 delta_t)))  ;effect: Correct Position
+                 )
+        )
+)
+(assert (ite a-1
+             (= action_one_count 1)
+             (= action_one_count 0)
+         )
+)
+
+;Action Two: Correct Velocity Drone Two
+(assert (=> a-2 (and d2_active_0                                                    ;precondition: Active
+                     (= d2_velocity_1 15.0)                                         ;effect: Correct Velocity
+                     (= d2_position_1 (+ d2_position_0 (* d2_velocity_1 delta_t)))  ;effect: Correct Position
+                )
+        )
+)
+(assert (ite a-2
+             (= action_two_count 1)
+             (= action_two_count 0)
+         )
+)
+
+;********COMPLETE EXCLUSION AXIOMS********
+(assert (= network_Bandwidth (+ action_one_count action_two_count)))
+
+;*********FRAME AXIOMS**************
+;Action One
+(assert (or a-1 (and (= d1_velocity_0 d1_velocity_1)
+                     (= d1_position_1 (+ d1_position_0 (* d1_velocity_0 delta_t))))))
+
+;Action Two
+(assert (or a-2 (and (= d2_velocity_0 d2_velocity_1)
+                     (= d2_position_1 (+ d2_position_0 (* d2_velocity_0 delta_t))))))
+
+(check-sat)
